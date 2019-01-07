@@ -1,0 +1,174 @@
+michal.maayan
+yardental
+
+
+=============================
+=      File description     =
+=============================
+%packages:
+main - The two main classes which read the given path and parsing the file.
+scope - All the different scopes that the file is divide to.
+variable - Variable managing (creation and validation).
+reference - All the data that could only be validated after reading the whole file.
+exception - All the unique error types that could be thrown while parsing the file.
+
+%classes:
+main -
+    Sjavac - Read the given path and print the compile results.
+    SJavaValidator - Validate the file's lines.
+scope -
+    Scope - An abstract class which *defines* a new scope.
+    GlobalScope - An implementation of a global scope object (which is similar to
+    a tree "root").
+    MethodScope - An implementation of a method scope object (this exercise
+    describes only a void method).
+    IfWhileScope - An implementation of an if scope or a while scope object (in
+    this exercise the if and the while have the same behaviour).
+    Method - An implementation of a method signature (the method name and args).
+variable -
+    Variable - An abstract class which defines a new variable.
+    VariableFactory - A factory implementation which create a new variable as required.
+    Boolean\Double\Char\String\Int Variable - a specific implemention of a
+    specific variable type.
+reference -
+    Reference - Confirm that a line is valid (check references).
+    VariableReference - Confirm that a variable reference is valid.
+    MethodRef - Confirm that a method calling line is valid.
+    IfWhileRef - Confirm that an if\while decleration is valid
+exception -
+    Warning in file - In case a line in the file is invalid a warning exception
+    will be thrown.
+
+=============================
+=          Design           =
+=============================
+
+In our design the code validation divides into two main processes - reading the
+file line by line and handling the references.
+Process 1 - read the file line by line logic:
+Confirm that each line is valid by itself (meaning check that the line pattern
+is as it should).
+Exceptional while validate a variable decleration line we valid that the ref
+argument is valid in case the ref argument
+is a primitive argument and not another varaible (becuse this case could be
+handle while reading the line). - This paragraph is confusing...
+Process 2 - handle refernces in the file logic:
+There are three reference options in the given file - a variable assignment case
+("a=b"), calling a method line (foo();) or an if\while delceration using variables
+(if(a&&b)). Each refernce case has a different handling logic but all of these
+cases need to be handle after reading the whole file.
+
+process 1 - design flow:
+A valid file line could be one of these 5 cases:
+    1. the line starts with "\\"
+    2. the whole line is spaces
+    3. the line ends with ";"
+    4. the line ends with "{"
+    5. the line has only "}"
+    * all the other options are syntax error and an error will be thrown.
+Each case needs to be handle differently but the flow is that a "{" sign requires
+to open a new scope and "}" sign requires to close the current scope and return
+to the "father" scope. Each scope has its own local variable list, and the global
+scope has the list of all the gloal variable and a list of all the method in the
+code (method name and variable).
+";" could be valid lines :
+    1. return statement
+    2. calling a method
+    3. declare on a new var
+    4. assignment operation ("a=b")
+
+process 2 - design flow:
+After reading the file we needed to confirm that the line operation is valid.
+The assinment case validation is done in a scope by scope running and not line
+by line. Meaning we firstly validat the global variableRef list and than a global
+son and then his son and etc. Until getting to a "leaf" scope. After we reach to
+a "leaf" scope we go back to his father and than to the father other sons.
+This recursion ruuning help us validating that a reference is valid in a current
+scope in relation to the other scope in the chain. More about this logic implemention
+is describe in the "Implemention Issues" section.
+
+More about the variable package -
+The Variable class contains a "handleNewVar" method, which is a static method
+that allowed to create at the end a new variable. This method handle 3 cases:
+    1. A declartion line of more the one Variable
+    2. A declration line of only a variable name
+    3. A decleration line of an assinment variable (variable name and its refernce)
+for each case this function return at the end a list of valid variables (or throw
+an exception in case that decleration was invalid).
+We made a class for each variable type in case in the future we would like (or
+asked to add a different methods to different variable types).
+We used the factory design pattern in the variable package because we felt that
+creating a new object is not simple, ecause we needed take into account many details
+and generate exceptions which are unique to our program. We use our factory to
+create a single object each time and not all of them at once.
+
+=============================
+=   Implementation Issues   =
+=============================
+At first we thought that all the refernces variable (all the variable assinment
+to another variable cases) should be in one list, which is a field of SJavaValidator,
+and the list should be handle firstly with the global variables and than with
+all the other variables. Meaning not scope by scope logic, but line by line logic
+(except from the global variable). While ruunong some tests we understood that
+this flow is incorrect because a variable needs to be part of a scopes chain
+and not a file field.
+
+In the UML we had three more classes that while writing the code we thought they
+redundant.
+1. A print class which planned to print the final result, but the our main
+class include only calling to two methods so we thought that final print should be
+dine from the main.
+2. A methodFactory class - in this exercise we were asked to handle only a void
+methods. This class needs to be implement in case we had more methods types.
+3. An Exception class - in this exercise we were asked to handle all types of exception
+in the same way. This class needs to be implement in case we had more methods types.
+
+=============================
+=         Extra           =
+=============================
+6.1 error handling -
+In case a line was invalid (if it was a wrong pattern or a wrong using case of
+a variable) a warning type "WarningInFile" objeact will be thrown. An informative
+message which explain why the exception was thrown will is sending. in case it is
+a IO exeption we used with javas class - IOException.
+We thoght this is the best way using excpetion logic at this exercise because that
+in case the line is invalid we would like to stop the program from ruuning.
+
+6.2 object oriented design -
+ 1. In case we would like to handle more types of variables we would need to add
+ the relevant cases ti the VariableFactory and create a unique class for this Variable.
+ Our code design aloow us to do it without doing big changes and just adding the
+ relevant check operation.
+
+ 2. We chode to describe how we will implement differnt methods, and using methods
+ of standart java.
+
+ a. Different methods -
+    As we described before in case we would like to add more methods we would have
+    a methodFactory class and the method class will probably be an abstract class,
+    while each method type has its own class (like Variable). In the method class
+    we will probably implement a "check return" method which will check that the
+    method "return" is valid/
+
+ b. Using methods of standart java -
+    The method class would be changed to an abstract class, and a cladd for each
+    method that needs to be supported will build. All of those sub-classes will
+    implement a method that executes the requested operation. In addition we will
+    hava a list of all the Java methods we should support, when each argument of
+    this list will include the method name and the argument it should get (which
+    means that we will build an object that has these fields).
+    When the user would call to one of the Java's mathod the method name and args
+    will be checked in the list and if the call method line is valid the operation
+    will be executed.
+
+
+6.3 Regular Expression -
+    Two of the main uses for regular expressions in our code were the ones used
+    to validating the syntax of variable or a pattern kune. Both of these
+    expressions are relatively long and complex, but using other text analyzing
+    mechanises would have required many more code lines.
+    Here are example of teo regex that were build for those purpose:
+    Check a variable decleration - "^\\s*(final\\s+)?(int|double|boolean|String|char)\\s+(.+)");
+    Check for one argument in the line - "^\\s*\\S+\\s*$" (we have used this regex
+    to confirn that after an "=" symbol there is only one object).
+
